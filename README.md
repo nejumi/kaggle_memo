@@ -67,7 +67,7 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - 色々なfeatureの組み合わせでsort_valuesをしてみると見つかる可能性がある（Telstra, BOSCHなど）。 
 - 通常の機械学習アルゴリズムでは、データ全体中での各行の統計的な分布の中での位置はモデル化してくれるが、前後の行との関係性や何行目にあるかなど、csvファイル中での空間的な位置に関する情報はモデルに反映されない。このタイプのLeakageはTelstraやTalkingData、BOSCHなどで確認されている。 
 - ただし、前後の行との関係性に基づくFeatureを作る場合は注意が必要である。前後の行を2回参照すると自分自身を参照することになるため、特にTarget-based featureを用いている場合にはLeakする場合がある。
--モチベーション的に厳しいものがあるが、Data Exploration の練習と思って取り組むしかない。 
+- モチベーション的に厳しいものがあるが、Data Exploration の練習と思って取り組むしかない。 
  
 ## その他 
 - Neural NetworkやSVMなど、StandardScalarなどによってデータの標準化がされていないと精度が出ない予測器も多い。逆にXGBoostやRandomForest等はその辺は気にしていないようだ (木なので)。 
