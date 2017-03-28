@@ -3,9 +3,9 @@
 
 ## 特徴エンジニアリングについて 
 - まずは、素うどんのXGBoostにかけて、plot_importance, feature_importances_を確認する。しかる後に、各特徴量をF-SCOREの高い順にExploratory Data Analysis (EDA)を行い、データに対する感覚を掴む。特徴量の数が少ないのであれば、初めからEDA。 
-- 標準偏差が0の説明変数 (constant rows) を除く。それは定数であり、情報を含まない。 
-- 重複した説明変数 (duplicated rows) を1つだけ残して他を除く。 
-- 相関係数が1である説明変数の組 (perfectly correlated rows) を探し、1つだけ残して他を除く。 
+- 標準偏差が0の説明変数 (constant cols) を除く。それは定数であり、情報を含まない。 
+- 重複した説明変数 (duplicated cols) を1つだけ残して他を除く。 
+- 相関係数が1である説明変数の組 (perfectly correlated cols) を探し、1つだけ残して他を除く。 
 - 各列について、値が0である説明変数の数を数えて、合計値を追加の説明変数として加える (count 0 per row)。逆に0でないものの合計をとることもある。割と定石らしい。 
 - カテゴリカル変数を、ダミー変数に変換する。 
 - カテゴリカル変数を、目的変数のそのカテゴリにおける平均値（期待値）に変換する。これはLikelihood EncodingあるいはBayesian Encoding（Multinomial Naive Bayesにかけるのと同じなので）と呼ばれる手法である。 
@@ -15,13 +15,13 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - 主成分分析 (PCA) の上位いくつかを追加の特徴量として加える。PCAの追加は冗長に思えるが、これが有効となりうる説明としては、Kaggleの数値系コンペで主力となるXGBoostなどの決定木の眷属が軸に斜めの表現を不得手（表現できないわけではないのだが、PCAで回転した方が効率的）としていることに起因しているようだ。 
 - 特徴が全く同じで目的変数が異なるペアをノイズとして除いても良い場合がある。 
 - 多クラス分類において、各クラスに対する確率をナイーブベイズライクに見積もったものを追加する (Facebook Vの2nd, 3rd place solution)。 
-- 時系列データにおいて、曜日や時刻などの周期性のある特徴量を円周上に配置し、cos, sinに分解することで、それらの循環連続性を表現する。 
-- 時系列データにおいて、曜日や時刻などの周期性のある特徴量に対して、数値を振る開始ポイントをずらしたデータを追加することが有効な場合がある（kNNなど）。 
+- 時系列データにおいて、曜日や時刻などの周期性のある特徴量を円周上に配置し、cos, sinに分解することで、それらの循環連続性を表現する [[Kaggle Kernel](https://www.kaggle.com/zeroblue/facebook-v-predicting-check-ins/mad-scripts-battle-z/code)]。 
+- 時系列データにおいて、曜日や時刻などの周期性のある特徴量に対して、例えば、{0:日曜日, 2:火曜日, 3:水曜日, 4:木曜日, 5:金曜日, 6:土曜日}のようになっているときに、{-2:金曜日, -1:金曜日, 0:日曜日, 2:火曜日, 3:水曜日, 4:木曜日, 5:金曜日, 6:土曜日, 7:日曜日, 8:火曜日}といった具合に両端をのばす（その分だけ列が増えることになる）。これにより、kNNなどで、両端の近さを表現しているようだ。 
 - 時系列データにおいて、近いイベントほど重みを大きくするのが有効な場合がある。 
 - 予測に必要な値（事前分布など）にXGBoostなどの予測値を代入する。 
 - Expediaコンペのように各idと行き先の「座標」を勾配降下法などによって求め、得られる大圏距離を特徴量に追加するなどの手法がある。大掛かりな特徴エンジニアリングだが、Expediaでは極めて効果的だったようだ。 
 - k-NearestNeighborsによって観測された近傍点の数を特徴量として追加する（Facebook Predict check-insの1st place Winner’s solution）。 
--大規模だがローカリティの強いデータは分割して分散処理が有効である。その際はtraining dataのグリッドをオーバーラップさせると情報損失を抑えられる (Facebook V)。 
+- 大規模だがローカリティの強いデータは分割して分散処理が有効である。その際はtraining dataのグリッドをオーバーラップさせると情報損失を抑えられる (Facebook V)。 
  
 ## Hyper Parameterの調整について 
 - GridSearchCVを用いる。 
@@ -29,12 +29,13 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - hyperoptを用いる。 
  
 ## Ensembleについて 
-- １層目の予測器群のCVによって生成したpredict_probaを特徴として用いる２層目の予測器群を構築する。元の特徴を併せて用いる場合と用いない場合の両方がある。これをStacked Generalizationと呼ぶ。初出は1992年の同名の論文であるが、Netflix PrizeやKDD Cup, Kaggle等の競技主導で発展した手法であり、現在の主なEnsemble方法らしい。 
+- 何はともあれ、[KAGGLE ENSEMBLING GUIDE](http://mlwave.com/kaggle-ensembling-guide/)
+- １層目の予測器群のCVによって生成したpredict_probaを特徴として用いる２層目の予測器群を構築する。元の特徴を併せて用いる場合と用いない場合の両方がある。これをStacked Generalizationと呼ぶ。初出は1992年の同名の論文であるが、Netflix PrizeやKDD Cup, Kaggle等の競技主導で発展した手法であり、現在の主なEnsemble方法らしい [[元論文](http://www.machine-learning.martinsewell.com/ensembles/stacking/Wolpert1992.pdf)], [[Code](https://github.com/nejumi/tools_for_kaggle/blob/master/stacked_generalization2.py)]。 
 - Stackingと似たものにBlendingというものもある。シンプルで扱いやすいが、クロスしないのでデータの一部を捨てることになる。BlendingとStackingを同じ意味で用語として区別しないこともある。 
 - 単体でPoorでもEnsembleで化けることがあるらしいので、捨てないこと。 
 - Baggingによる改良が望めないか調べる。 
 - 複数の予測器による予測の加重平均を取ることで、改良が望めないか調べる。Averagingは単純だが強力な手法である。XGBoostとRandomForestは相性が良いことが経験的に知られている。また、これらにNeural NetworkやSVM, kNNなどを加えるのが良い。これは、XGBoost/RandomForestはTree Baseのために決定境界が特徴軸に平行な矩形になるが、Neural Networkなどは曲線（曲面）となるため（よりdiverseな予測器群のensembleになるため）である。 
-- 評価関数がMAP@kの場合、候補に重みを設定した上でSubmission同士のensembleが有効である。その場合、終盤のensembleに備えてMAP@j, j>kで予測・保存しておくと良い（ただし、可能であるならProbabilityのaveragingの方が当然好ましい）。 
+- 評価関数がMAP@kの場合、候補に重みを設定した上でSubmission同士のensembleが有効である。その場合、終盤のensembleに備えてMAP@j, j>kで予測・保存しておくと良い（ただし、可能であるならProbabilityのaveragingの方が当然好ましい） [[Kaggle Kernel](https://www.kaggle.com/c/facebook-v-predicting-check-ins/discussion/21265)]。 
 - その他、論理和をとることが有効な場合がある。 
  
 ## Deep Learningについて 
@@ -45,7 +46,7 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - ImageNetで予め学習済みのpre-trainedモデルを用いると良い。これを転移学習、(あるいはNNの場合は特にfine tuning)という。その際は、出力側の全結合層を当該課題に適したものに交換し、畳み込み層をフリーズしてAdamあたりで訓練⇒フリーズを出力側からちょっとずつ解除し、低learning rateのSGDあたりでじわじわ再訓練（fine tuning）する。いきなり全体を訓練すると畳み込み層の特徴抽出機能が崩壊するので注意。 
 - 全結合層→畳み込み層の変換が有効だったりするらしい。 
 - pre-trainedモデルは様々なものが公開されているので、それらのensembleを行うのが定石。代表的なところでは、Kerasに標準で実装されているものだけでも、VGG16, VGG19, InceptionV3, Xception, ResNet50等。 
-- pre-trainedモデルの選択には、[arXiv:1605.07678]を参照すると良いかもしれない。InceptionV3あたりがバランス良い？ 
+- pre-trainedモデルの選択には、[arXiv:1605.07678](https://arxiv.org/abs/1605.07678)を参照すると良いかもしれない。InceptionV3あたりがバランス良い？ 
 - Deep LearningはBaggingやAveragingの効果が特に大きいので、必ず行うこと。 
 - Averagingを行う際に、全体を単純に加重平均するのではなく、columnごとに独立に重みを変えることでout-perform出来たとの報告あり(State Farm)。ただし、validation dataが小さいと過学習しやすいので注意である。 
 - 元画像の鏡像や回転・変形画像、ノイズやぼかしの付加によってデータを水増しする。これによって元画像のみで訓練するよりもロバストなモデルを構築できる。これをData Augmentationという。ただし、水増しデータがロバストの域を超えて外れ値になってしまうと、逆に精度を落としうるので注意。なお、KerasにはData Augmentationを逐次行いながら画像を生成してくれるImageDataGeneratorという便利で省メモリな機能がある。 
@@ -56,7 +57,7 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - 動画のキャプチャを課題に用いている場合、kNNで静止画から動画に復元できてしまう(State Farm)。 
 - 単に高確信度データに対してだけpseudo-labelingするだけでなく、低確信度データまで含めてpseudo-labelingしてしまい、「とあるモデルによるpseudo-labelを予測するという事前学習」とみなしてモデルを学習しておく手法がある。これにより、目的のタスクに近い事前学習によるpre-trained modelを得られたのと同様のご利益が得られる可能性がある。得られた重みを初期値として、その後にちゃんと教師ありでfine-tuningする。 
 - denoising autoencoderによる事前学習もよく知られている。ImageNet　によるpre-trained modelが主流になってあまり使用されなくなってはいるようだ。 
-- 活性化関数はReLUが標準的。PReLUは良いが、データ数が少ない場合には過学習しがちである（データから負側勾配を学習するので）。RReLUが性能良いらしいが、KerasでもChainerでも未実装である。[arXiv:1505.00853] 
+- 活性化関数はReLUが標準的。PReLUは良いが、データ数が少ない場合には過学習しがちである（データから負側勾配を学習するので）。RReLUが性能良いらしいが、KerasでもChainerでも未実装である。[[arXiv](https://arxiv.org/abs/1505.00853)] 
 - Deep learningでは特に過学習しやすく、その対策が重要である。出力側の構造を無駄に複雑にしない、dropout、batch normalization、early_stopping、正則化などで対処すること。 
 - 予測時にテストデータに対してRandom 10 croppingを行い、Averagingすると良い。その際にmulti-scaleにするとより効果的である。 
  
@@ -64,7 +65,7 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - 悲しいことであるが、KaggleにおいてもLeakageは度々発生している。機械学習のコンペとしては無意味で不毛な行為だが、こうしたLeakageに対処し、取り込むことを迫られる場合もある。 
 - LeaderBoardのスコアに著しい不連続性が発生している場合、Leakage起因である可能性がある。 
 - row_Idをfeatureに加えてみて、それが予測上意味を持ってしまっている場合、それ自身もLeakageであると同時に、より重大なLeakageの予兆である可能性がある。 
-- 色々なfeatureの組み合わせでsort_valuesをしてみると見つかる可能性がある（Telstra, BOSCHなど）。 
+- 色々なfeatureの組み合わせでsort_valuesをしてみると見つかる可能性がある（Telstra, [BOSCH](https://www.kaggle.com/mmueller/bosch-production-line-performance/road-2-0-4/code)など）。 
 - 通常の機械学習アルゴリズムでは、データ全体中での各行の統計的な分布の中での位置はモデル化してくれるが、前後の行との関係性や何行目にあるかなど、csvファイル中での空間的な位置に関する情報はモデルに反映されない。このタイプのLeakageはTelstraやTalkingData、BOSCHなどで確認されている。 
 - ただし、前後の行との関係性に基づくFeatureを作る場合は注意が必要である。前後の行を2回参照すると自分自身を参照することになるため、特にTarget-based featureを用いている場合にはLeakする場合がある。
 - モチベーション的に厳しいものがあるが、Data Exploration の練習と思って取り組むしかない。 
