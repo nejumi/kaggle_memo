@@ -16,7 +16,7 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - 特徴が全く同じで目的変数が異なるペアをノイズとして除いても良い場合がある。 
 - 多クラス分類において、各クラスに対する確率をナイーブベイズライクに見積もったものを追加する (Facebook Vの2nd, 3rd place solution)。 
 - 時系列データにおいて、曜日や時刻などの周期性のある特徴量を円周上に配置し、cos, sinに分解することで、それらの循環連続性を表現する [[Kaggle Kernel](https://www.kaggle.com/zeroblue/facebook-v-predicting-check-ins/mad-scripts-battle-z/code)]。 
-- 時系列データにおいて、曜日や時刻などの周期性のある特徴量に対して、例えば、{0:日曜日, 2:火曜日, 3:水曜日, 4:木曜日, 5:金曜日, 6:土曜日}のようになっているときに、{-2:金曜日, -1:金曜日, 0:日曜日, 2:火曜日, 3:水曜日, 4:木曜日, 5:金曜日, 6:土曜日, 7:日曜日, 8:火曜日}といった具合に両端をのばす（その分だけ列が増えることになる）。これにより、kNNなどで、両端の近さを表現しているようだ。 
+- 時系列データにおいて、曜日や時刻などの周期性のある特徴量に対して、例えば、{0:日曜日, 1:月曜日, 2:火曜日, 3:水曜日, 4:木曜日, 5:金曜日, 6:土曜日}のようになっているときに、{-2:金曜日, -1:土曜日, 0:日曜日, 1:月曜日, 2:火曜日, 3:水曜日, 4:木曜日, 5:金曜日, 6:土曜日, 7:日曜日, 8:月曜日}といった具合に両端をのばす（その分だけ列が増えることになる）。これにより、kNNなどで、両端の近さを表現しているようだ。 
 - 時系列データにおいて、近いイベントほど重みを大きくするのが有効な場合がある。 
 - 予測に必要な値（事前分布など）にXGBoostなどの予測値を代入する。 
 - Expediaコンペのように各idと行き先の「座標」を勾配降下法などによって求め、得られる大圏距離を特徴量に追加するなどの手法がある。大掛かりな特徴エンジニアリングだが、Expediaでは極めて効果的だったようだ。 
@@ -48,7 +48,8 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - pre-trainedモデルは様々なものが公開されているので、それらのensembleを行うのが定石。代表的なところでは、Kerasに標準で実装されているものだけでも、VGG16, VGG19, InceptionV3, Xception, ResNet50等。 
 - pre-trainedモデルの選択には、[arXiv:1605.07678](https://arxiv.org/abs/1605.07678)を参照すると良いかもしれない。InceptionV3あたりがバランス良い？ 
 - Deep LearningはBaggingやAveragingの効果が特に大きいので、必ず行うこと。 
-- Averagingを行う際に、全体を単純に加重平均するのではなく、columnごとに独立に重みを変えることでout-perform出来たとの報告あり(State Farm)。ただし、validation dataが小さいと過学習しやすいので注意である。 
+- Averagingを行う際に、全体を単純に加重平均するのではなく、columnごとに独立に重みを変えることでout-perform出来たとの報告あり(State Farm)。ただし、validation dataが小さいと過学習しやすいので注意である。
+- Averagingは単純平均の他にも、N乗平均、対数平均など試してみる。
 - 元画像の鏡像や回転・変形画像、ノイズやぼかしの付加によってデータを水増しする。これによって元画像のみで訓練するよりもロバストなモデルを構築できる。これをData Augmentationという。ただし、水増しデータがロバストの域を超えて外れ値になってしまうと、逆に精度を落としうるので注意。なお、KerasにはData Augmentationを逐次行いながら画像を生成してくれるImageDataGeneratorという便利で省メモリな機能がある。 
 - 回帰による検出と分類を多段階にせず、一段階で高速に行う手法がある (Fast R-CNN, Faster R-CNN, YOLO, SSD等)。複雑なアーキテクチャであるが、おいおい理解すべきだろう。 
 - 入力画像のサイズは、色々変えてみて人間の目で識別可能かどうかを試して見ると良い。ただし、人間の識別方法が最適でない場合もあるようで、上記の方法も確実ではないようだ。 
@@ -56,7 +57,7 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - テストデータに対するpseudo-labelingを行う場合にはk foldに分けて、予測対象以外のfoldに対するpseudo labelを用いる手法が有効らしい (Cross pseudo-labeling)。これは分類器がpseudo -labelの丸暗記を行うのを防ぐためであり、iwiwiがState Farmで用いた手法である。 
 - 動画のキャプチャを課題に用いている場合、kNNで静止画から動画に復元できてしまう(State Farm)。 
 - 単に高確信度データに対してだけpseudo-labelingするだけでなく、低確信度データまで含めてpseudo-labelingしてしまい、「とあるモデルによるpseudo-labelを予測するという事前学習」とみなしてモデルを学習しておく手法がある。これにより、目的のタスクに近い事前学習によるpre-trained modelを得られたのと同様のご利益が得られる可能性がある。得られた重みを初期値として、その後にちゃんと教師ありでfine-tuningする。 
-- denoising autoencoderによる事前学習もよく知られている。ImageNet　によるpre-trained modelが主流になってあまり使用されなくなってはいるようだ。 
+- denoising autoencoderによる事前学習もよく知られている。ImageNetによるpre-trained modelが主流になってあまり使用されなくなってはいるようだ。 
 - 活性化関数はReLUが標準的。PReLUは良いが、データ数が少ない場合には過学習しがちである（データから負側勾配を学習するので）。RReLUが性能良いらしいが、KerasでもChainerでも未実装である。[[arXiv](https://arxiv.org/abs/1505.00853)] 
 - Deep learningでは特に過学習しやすく、その対策が重要である。出力側の構造を無駄に複雑にしない、dropout、batch normalization、early_stopping、正則化などで対処すること。 
 - 予測時にテストデータに対してRandom 10 croppingを行い、Averagingすると良い。その際にmulti-scaleにするとより効果的である。 
