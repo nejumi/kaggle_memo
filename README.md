@@ -36,6 +36,7 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - 単体でPoorでもEnsembleで化けることがあるらしいので、捨てないこと。 
 - Baggingによる改良が望めないか調べる。 
 - 複数の予測器による予測の加重平均を取ることで、改良が望めないか調べる。Averagingは単純だが強力な手法である。XGBoostとRandomForestは相性が良いことが経験的に知られている。また、これらにNeural NetworkやSVM, kNNなどを加えるのが良い。これは、XGBoost/RandomForestはTree Baseのために決定境界が特徴軸に平行な矩形になるが、Neural Networkなどは曲線（曲面）となるため（よりdiverseな予測器群のensembleになるため）である。 
+- Averagingは単純平均の他にも、N乗平均、対数平均など試してみると良いかもしれない。[[Kaggle](https://www.kaggle.com/c/santander-customer-satisfaction/discussion/20783#119355)]
 - 評価関数がMAP@kの場合、候補に重みを設定した上でSubmission同士のensembleが有効である。その場合、終盤のensembleに備えてMAP@j, j>kで予測・保存しておくと良い（ただし、可能であるならProbabilityのaveragingの方が当然好ましい） [[Kaggle Kernel](https://www.kaggle.com/c/facebook-v-predicting-check-ins/discussion/21265)]。 
 - その他、論理和をとることが有効な場合がある。 
  
@@ -49,8 +50,7 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - pre-trainedモデルは様々なものが公開されているので、それらのensembleを行うのが定石。代表的なところでは、Kerasに標準で実装されているものだけでも、VGG16, VGG19, InceptionV3, Xception, ResNet50等。 
 - pre-trainedモデルの選択には、[arXiv:1605.07678](https://arxiv.org/abs/1605.07678)を参照すると良いかもしれない。InceptionV3あたりがバランス良い？ 
 - Deep LearningはBaggingやAveragingの効果が特に大きいので、必ず行うこと。 
-- Averagingを行う際に、全体を単純に加重平均するのではなく、columnごとに独立に重みを変えることでout-perform出来たとの報告あり(State Farm)。ただし、validation dataが小さいと過学習しやすいので注意である。
-- Averagingは単純平均の他にも、N乗平均、対数平均など試してみる。
+- Averagingを行う際に、全体を単純に加重平均するのではなく、Confusion Matrixから得た洞察を元にcolumnごとに独立に実施することでout-perform出来たとの報告あり[[State Farm](https://www.kaggle.com/c/state-farm-distracted-driver-detection/discussion/22906)]。
 - 元画像の鏡像や回転・変形画像、ノイズやぼかしの付加によってデータを水増しする。これによって元画像のみで訓練するよりもロバストなモデルを構築できる。これをData Augmentationという。ただし、水増しデータがロバストの域を超えて外れ値になってしまうと、逆に精度を落としうるので注意。なお、KerasにはData Augmentationを逐次行いながら画像を生成してくれるImageDataGeneratorという便利で省メモリな機能がある。 
 - 回帰による検出と分類を多段階にせず、一段階で高速に行う手法がある (Fast R-CNN, Faster R-CNN, YOLO, SSD等)。複雑なアーキテクチャであるが、おいおい理解すべきだろう。 
 - 入力画像のサイズは、色々変えてみて人間の目で識別可能かどうかを試して見ると良い。ただし、人間の識別方法が最適でない場合もあるようで、上記の方法も確実ではないようだ。 
