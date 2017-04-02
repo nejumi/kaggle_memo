@@ -2,10 +2,11 @@
  This is my memorandum for kaggle competition. Sorry, only in Japanese. I'm not a profrssional data scientist, so the contents may be inaccurate.
 
 ## 特徴エンジニアリングについて 
-- まずは、素うどんのXGBoostにかけて、plot_importance, feature_importances_を確認する。しかる後に、各特徴量をF-SCOREの高い順にExploratory Data Analysis (EDA)を行い、データに対する感覚を掴む。特徴量の数が少ないのであれば、初めからEDA。 
-- 標準偏差が0の説明変数 (constant cols) を除く。それは定数であり、情報を含まない。 
-- 重複した説明変数 (duplicated cols) を1つだけ残して他を除く。 
-- 相関係数が1である説明変数の組 (perfectly correlated cols) を探し、1つだけ残して他を除く。 
+- まずは、素うどんのXGBoostにかけて、plot_importance, feature_importances_を確認する。しかる後に、各特徴量をF-SCOREの高い順にExploratory Data Analysis (EDA)を行い、データに対する感覚を掴む。特徴量の数が少ないのであれば、初めからEDA。
+- 情報を含まないcolumnsを除く。[Kaggle Kernel: [R](https://www.kaggle.com/zfturbo/santander-customer-satisfaction/to-the-top-v3), [Python](https://www.kaggle.com/yuansun/santander-customer-satisfaction/lb-0-84-for-starters)]
+    - 標準偏差が0の説明変数 (constant cols) を除く。 
+    - 重複した説明変数 (duplicated cols) を1つだけ残して他を除く。 
+    - 相関係数が1である説明変数の組 (perfectly correlated cols) を探し、1つだけ残して他を除く。 
 - 各列について、値が0である説明変数の数を数えて、合計値を追加の説明変数として加える (count 0 per row)。逆に0でないものの合計をとることもある。割と定石らしい。 
 - カテゴリカル変数を、ダミー変数に変換する。 
 - カテゴリカル変数を、目的変数のそのカテゴリにおける平均値（期待値）に変換する。これはLikelihood EncodingあるいはBayesian Encoding（Multinomial Naive Bayesにかけるのと同じなので）と呼ばれる手法である。 
@@ -77,6 +78,7 @@ Target Based Featureであるため、out-of-fold prediction (Leave-One-Out等) 
 - Public Leader Boardに過学習しかねないので注意のこと。自分のLocal CVを信じること。 あるいは、LocalとPublicをデータサイズよって加重平均するのも手。
 - 大きすぎるLocal scoreの向上は手元でのLeakageの可能性大のため、気をつけること。そこを深堀りしてしまうと、大幅に時間を無駄にしてしまう。 
 - 序盤はensembleによる安易なスコアアップは控えること。時間と余裕があるうちに、他の多くの人はやらないような独創的な手法を模索すべき。人と同じアプローチは後から取り入れれば良く、また終盤戦を勝ち残るための優位性になりえない。 
-- 裏技チックではあるが、testデータに対するsemi-supervised learningは現状で主要な差別化ポイントの一つである。ただし、昨今のKaggleではこれができてしまうこと自体が実課題に対応できないモデルを生む原因の一つとして問題視されており、今後は変わっていくと予想される。 
-- EXCEL等でデータをスプレッドシートとして眺めて分析するのも、意外と有効である。重要箇所を色づけして眺めたり、targetの積算値を眺めたりしてパターンが無いか調べたりする（BOSCHコンペでのradder氏の指摘。EXCELも馬鹿にはできない）。 
+- 裏技チックではあるが、testデータに対するsemi-supervised learningは現状で主要な差別化ポイントの一つである。[Code](https://github.com/nejumi/tools_for_kaggle/blob/master/semi_supervised_learner.py)
+    - ただし、昨今のKaggleではこれができてしまうこと自体が実課題に対応できないモデルを生む原因の一つとして問題視されており、今後は変わっていくと予想される。 
+- EXCEL等でデータをスプレッドシートとして眺めて分析するのも、意外と有効である。重要箇所を色づけして眺めたり、targetの積算値を眺めたりしてパターンが無いか調べたりする（BOSCHコンペでの[radder氏の指摘](https://www.kaggle.com/c/bosch-production-line-performance/discussion/24065#138106)。EXCELも馬鹿にはできない）。 
 - ダウンロードしたtrain.csv, test.csvの特徴量はあくまで主催者が用意したひとつの断面でしかない。最適であるとは限らないし、実際大抵はそうではない。 
